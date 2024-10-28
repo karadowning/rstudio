@@ -1,0 +1,266 @@
+---
+title: "Glassdoor"
+output: html_document
+date: "2024-10-27"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Glassdoor_reviews 2")
+options(repos = c(CRAN = "[http://cran.us.r-project.org](http://cran.us.r-project.org)")) 
+```
+
+```{r set working directory}
+setwd("~/Library/Mobile Documents/com~apple~CloudDocs/Desktop/Glassdoor_reviews 2")
+```
+
+
+```{R install packages 1}
+install.packages("lubridate")
+install.packages("caret")
+install.packages("readr")
+install.packages("rpart")
+install.packages("rpart.plot")
+```
+
+```{R load libraries 1}
+library(lubridate)
+library(caret)
+library(readr)
+library(rpart)
+library(rpart.plot)
+```
+
+```{R load data}
+glassdoor_reviews <- read_csv("glassdoor_reviews.csv")
+View(glassdoor_reviews)
+```
+
+```{R data cleaning}
+#Check for missing values
+summary(glassdoor_reviews)
+sapply(glassdoor_reviews, function(x) sum(is.na(x)))
+```
+
+
+```{R data cleaning missing values}
+#Fill missing categorical values with "Unknown"
+glassdoor_reviews$job_title[glassdoor_reviews$job_title == " "] <- "Unknown"
+glassdoor_reviews$location[glassdoor_reviews$location == ""] <- "Unknown"
+```
+
+
+```{R data cleaning convert date}
+# Convert date_review to Date format assuming it's in Excel format (days since 1900)
+glassdoor_reviews$date_review <- as.Date(glassdoor_reviews$date_review, origin = "1899-12-30")
+```
+
+
+
+
+
+```{R data cleaning remove column}
+#Remove diversity_inclusion column
+glassdoor_reviews <- glassdoor_reviews[, !(names(glassdoor_reviews) %in% c("diversity_inclusion"))]
+```
+
+
+
+```{R data cleaning remove rows}
+#Remove rows for numeric variables which have NA values
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$work_life_balance),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$culture_values),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$overall_rating),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$comp_benefits),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$career_opp),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$senior_mgmt),]
+```
+
+
+```{R data cleaning check for NA}
+#List of numeric columns to check for NA values
+numeric_columns <- c("work_life_balance", "culture_values", "overall_rating")
+```
+
+```{R data cleaning remove numeric}
+#Remove rows for numeric variables which have NA values
+for (column in numeric_columns) {
+  glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews[[column]]),]
+}
+```
+
+```{R data cleaning structure}
+#Check the structure of the cleaned data
+str(glassdoor_reviews)
+```
+
+
+```{R data cleaning summary}
+#Summary of the cleaned data
+summary(glassdoor_reviews)
+```
+```{R data cleaning sapply}
+sapply(glassdoor_reviews, function(x) sum(is.na(x)))
+```
+```{r install packages 2}
+install.packages("dplyr")
+```
+```{r load libraries 2}
+library(dplyr)
+```
+
+```{r convert overall rating}
+# Convert overall_rating to numeric
+glassdoor_reviews$overall_rating <- as.character(glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Very Satisfied", "5", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Satisfied", "4", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("OK", "3", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Dissatisfied", "2", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Very Dissatisfied", "1", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- as.numeric(glassdoor_reviews$overall_rating)
+```
+
+
+```{r summary statistics}
+# Summary statistics for overall_rating
+summary(glassdoor_reviews$overall_rating)
+```
+
+```{r install packages 3}
+install.packages("ggplot2")
+```
+```{r load libraries 3}
+library(ggplot2)
+```
+
+```{r visualizations}
+ggplot(glassdoor_reviews, aes(x = overall_rating)) +
+  geom_histogram(fill = "blue", color = "black", bins = 5) +
+  labs(title = "Histogram of Overall Rating", x = "Overall Rating", y = "Frequency")
+```
+```{r linear regression}
+# Linear regression model
+lm_model <- lm(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = glassdoor_reviews)
+summary(lm_model)
+```
+```{r check for multicollinearity}
+# Check for multicollinearity
+cor(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")])
+```
+```{r install packages 4}
+install.packages("glmnet")
+```
+```{r load libraries 4}
+library(glmnet)
+```
+
+
+
+```{r lasso regression}
+# Lasso regression model
+x <- as.matrix(glassdoor_reviews[, numeric_columns[-3]]) # Exclude overall_rating
+y <- glassdoor_reviews$overall_rating
+lasso_model <- cv.glmnet(x, y, alpha = 1) 
+plot(lasso_model) 
+```
+```{r correlation matrix}
+# Correlation matrix
+cor(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")])
+```
+```{r maxi max}
+## Create a decision matrix with 'Comp_Benefits', 'Work_Life_Balance', 'Career_opp', 'Senior_mngmt' and 'Culture_values' as criteria
+decision_matrix <- data.frame(
+  Comp_Benefits = c(9, 7, 8, 6, 5),
+  Work_Life_Balance = c(8, 9, 7, 6, 5),
+  Career_opp = c(7, 8, 9, 6, 5),
+  Senior_mngmt = c(6, 7, 8, 9, 5),
+  Culture_values = c(5, 6, 7, 8, 9)
+)
+```
+
+
+```{r maximum value}
+# Identify the maximum value in each column
+max_values <- apply(decision_matrix, 2, max)
+max_values
+```
+```{r highest value}
+## Choose the option with the highest maximum value
+best_option <- which.max(max_values)
+best_option
+```
+
+```{r install packages 5}
+install.packages("rpart")
+install.packages("rpart.plot")
+```
+```{r load libraries 5}
+library(rpart)
+library(rpart.plot)
+```
+
+```{r decision tree}
+# Decision tree model
+decision_tree <- rpart(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = glassdoor_reviews, method = "anova")
+rpart.plot(decision_tree)
+```
+```{r install packages 6}
+install.packages("ranger")
+```
+
+```{r load libraries 6}
+library(ranger)
+```
+
+
+
+```{r split data}
+#Split data into training and testing sets
+set.seed(123)
+train_index <- sample(1:nrow(glassdoor_reviews), 0.7 * nrow(glassdoor_reviews))
+train_data <- glassdoor_reviews[train_index, ]
+test_data <- glassdoor_reviews[-train_index, ]
+```
+
+
+```{r train model}
+#Train the Random Forest model using ranger
+rf_model <- ranger(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = train_data, importance = "impurity")
+rf_model
+```
+
+```{r make predictions}
+# Make predictions using the testing data
+predictions <- predict(rf_model, data = test_data)$predictions
+```
+
+
+```{r evaluate the model}
+#Evaluate the model on the testing data using Root Mean Squared Error
+rmse <- sqrt(mean((predictions - test_data$overall_rating)^2))
+print(paste("RMSE:", rmse))
+```
+
+```{r evaluate the model with r squared}
+#R-squared (R^2) - a measure of variance explained
+r_squared <- 1 - sum((test_data$overall_rating - predictions)^2) / sum((test_data$overall_rating - mean(test_data$overall_rating))^2)
+print(paste("R-squared:", r_squared))
+```
+
+```{r plot actual vs predicted}
+#Plot actual vs predicted values
+plot(predictions, test_data$overall_rating, xlab = "Predicted", ylab = "Actual", main = "Actual vs Predicted Values")
+abline(0, 1, col = "red") 
+```
+
+
+```{r variable importance}
+#Variable importance
+importance(rf_model)
+plot(importance(rf_model), type = "l") 
+```
+
+
+
+
+
+
