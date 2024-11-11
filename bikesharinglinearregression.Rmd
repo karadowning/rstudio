@@ -1,0 +1,163 @@
+---
+title: "Bike_Sharing_RStudio"
+output: html_document
+date: "2024-10-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Load libraries
+library(ggplot2)
+library(readxl)
+```
+
+getwd()
+
+```{r}
+# Load bike sharing data from excel file
+day_df <- read_excel("~/Downloads/main Model - Bikesharing data.xlsx")
+View(main_Model_Bikesharing_data)
+```
+
+
+```{r}
+# Load the prediction dataset
+prediction_data <- read_excel("~/Downloads/Prediction dataset - Bikesharing data.xlsx")
+View(Prediction_dataset_Bikesharing_data) 
+
+# Display the first few rows of the dataset
+head(day_df)
+```
+
+
+```{r}
+# Select only numerical variables for the model
+day_df_numeric <- day_df[,c("casual","atemp","hum","windspeed", "registered")]
+```
+
+```{r}
+# Calculate pairwise correlation between the variables
+correlations <- cor(day_df_numeric)
+correlations
+```
+
+```{r}
+# Print the correlation matrix
+print(correlations)
+```
+```{r}
+# Visualize the correlation using a scatterplot matrix
+pairs(day_df_numeric)
+```
+```{r}
+# Visualize the correlation using a heatmap
+library(reshape2)
+melted_cor <- melt(correlations)
+ggplot(data = melted_cor, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", high = "red") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Correlation Heatmap")
+```
+
+```{r}
+# Build the multiple linear regression model
+model <- lm(casual ~ atemp + hum + windspeed, data = day_df)
+summary(model)
+```
+
+
+```{r}
+# Plot histogram of residuals
+residuals <- residuals(model)
+hist(residuals, breaks = 20, main = "Histogram of Residuals", xlab = "Residuals")
+```
+
+```{r}
+# Plot scatter plot of residuals  
+plot(predict(model), residuals, main = "Residuals vs Fitted Values", xlab = "Fitted Values", ylab = "Residuals")
+abline(h = 0, col = "red")
+```
+
+```{r}
+# Plot scatter plot of standardized residuals
+standardized_residuals <- rstandard(model)
+plot(predict(model), standardized_residuals, main = "Standardized Residuals vs Fitted Values", xlab = "Fitted Values", ylab = "Standardized Residuals")
+abline(h = 0, col = "red")
+```
+
+```{r}
+# Build the multiple linear regression model for 'registered'
+model_registered <- lm(registered ~ atemp + hum + windspeed, data = day_df)
+summary(model_registered)
+```
+
+
+```{r}
+# add categorical variables to the model
+model2 <- lm(cnt ~ atemp + hum + windspeed + weathersit + workingday + season, data = day_df)
+summary(model)
+```
+
+
+```{r}
+# Prediction equation for 'casual' based on the model
+prediction_data$casual_predicted <- predict(model, newdata = prediction_data)
+```
+
+```{r}
+# Extract coefficients from the model summary and equation
+coefficients <- summary(model)$coefficients
+intercept <- coefficients[1, 1]
+atemp_coef <- coefficients[2, 1]
+hum_coef <- coefficients[3, 1]
+windspeed_coef <- coefficients[4, 1]
+registered_coef <- coefficients[5, 1]
+```
+
+
+
+```{r}
+# Print the coefficients and intercept
+print(coefficients)
+print(intercept)
+print(atemp_coef)
+print(hum_coef)
+print(windspeed_coef)
+print(registered_coef)
+```
+
+
+```{r}
+# Write the prediction equation
+prediction_equation <- paste("casual_predicted = ", round(intercept, 2), " + ", round(atemp_coef, 2), " * atemp + ", round(hum_coef, 2), " * hum + ", round(windspeed_coef, 2), " * windspeed + ", round(registered_coef, 2), " * registered", sep = "")
+print(prediction_equation)
+```
+
+```{r}
+
+# Extract coefficients from the model summary
+coefficients <- summary(model)$coefficients
+intercept <- coefficients[1, 1]
+atemp_coef <- coefficients[2, 1]
+hum_coef <- coefficients[3, 1]
+windspeed_coef <- coefficients[4, 1]
+registered_coef <- coefficients[5, 1] 
+
+# Use prediction equation to predict with test data
+prediction_data$casual_predicted <- intercept + atemp_coef * prediction_data$atemp + hum_coef * prediction_data$hum + windspeed_coef * prediction_data$windspeed + registered_coef * prediction_data$registered
+
+# Print the predicted 'casual' values
+print(prediction_data$casual_predicted)
+
+```
+
+
+```{r}
+# Display the relevant columns with predicted values
+print(prediction_data[, c("atemp", "hum", "windspeed", "registered", "casual_predicted")]) 
+```
