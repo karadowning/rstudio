@@ -1,0 +1,358 @@
+---
+title: "Session 5"
+output: html_document
+date: "2024-11-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries}
+library(tidyverse) # for data manipulation
+library(forecast) # for time series analysis
+library(lubridate) # for date manipulation
+library(mlba) # for load data
+```
+
+
+```{r load_data}
+# Load the data for Department Store Sales
+data <- read.csv("DepartmentStoreSales.csv")
+```
+
+```{r create a time series object}
+# Create a time series object
+sales.ts <- ts(data$Sales, 
+                               start = c(2000, 1), 
+                               # end = c(2005, 4),
+                               frequency = 4)
+```
+
+
+```{r create a time plot}
+# Create a time plot
+sales.ts |>
+  autoplot(col = "navy", size = 1) +  # Changed to a darker blue
+  labs(title = "Department Store Sales",
+       x = "Year",
+       y = "Sales") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"), 
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    panel.grid.major = element_blank(),
+   # Remove major grid lines
+    panel.grid.minor = element_blank()   # Remove minor grid lines 
+  ) +
+  scale_x_continuous(breaks = seq(from = start(sales.ts)[1], 
+                                 to = end(sales.ts)[1], by = 1)) 
+```
+```{r decompose the time series}
+# Decompose the time series
+decomp <- decompose(sales.ts)
+```
+
+```{r create an autoplot of the decomposed time series}
+# Create an autoplot of the decomposed time series
+decompose(sales.ts) |> 
+  autoplot() +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") 
+```
+
+
+```{r load the data for appliance shimpment}
+# Load the data for Appliance Shipment
+data2 <- read.csv("ApplianceShipments.csv")
+```
+
+```{r create a time series object for Appliance Shipment}
+# Create a time series object for Appliance Shipment
+appliance.ts <- ts(data2$Shipments, 
+                               start = c(1985, 1), 
+                               # end = c(1989, 4),
+                               frequency = 4)
+```
+
+
+```{r create a time plot for Appliance Shipment}
+# Create a time plot for Appliance Shipment
+appliance.ts |>
+  autoplot(col = "navy", size = 1) +  # Changed to a darker blue
+  labs(title = "Appliance Shipment",
+       x = "Year",
+       y = "Shipments") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 18, face = "bold"), 
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    panel.grid.major = element_blank(),
+   # Remove major grid lines
+    panel.grid.minor = element_blank()   # Remove minor grid lines 
+  ) +
+  scale_x_continuous(breaks = seq(from = start(shipment.ts)[1], 
+                                 to = end(shipment.ts)[1], by = 1))
+```
+
+```{r decompose the time series for Appliance Shipment}
+# Decompose the time series for Appliance Shipment
+decomp2 <- decompose(appliance.ts)
+```
+
+```{r create an autoplot of the decomposed time series for Appliance Shipment}
+# Create an autoplot of the decomposed time series for Appliance Shipment
+decompose(appliance.ts) |> 
+  autoplot() +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") 
+```
+
+
+```{r load the data Canadian Work Hours}
+# Load the data for Canadian Work Hours
+data3 <- read.csv("CanadianWorkHours.csv")
+```
+
+```{r create a time series object for Canadian Work Hours}
+# Create a time series object for Canadian Work Hours
+workhours.ts <- ts(CanadianWorkHours$Hours, 
+                   start = 1966, 
+                   end = 2000, 
+                   freq = 1)
+```
+
+```{r create a time plot for Canadian Work Hours}
+# Create a time plot for Canadian Work Hours
+workhours.ts |>
+  autoplot(col = "navy") +
+  labs(title = "Canadian Manufacturing Workers Workhours",
+       x = "Year",
+       y = "Hours Per Week") +
+  scale_x_continuous(breaks = seq(1965, 2000, 5)) + # Change the x-axis major breaks
+  scale_y_continuous(breaks = seq(30, 40, 0.5)) + # Change the y-axis major breaks
+  # remove background
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.1),)
+```   
+
+```{r visual inspection}
+# Visual Inspection
+plot(workhours.ts, 
+     main = "Canadian Manufacturing Workers Workhours",
+     xlab = "Year", 
+     ylab = "Hours Per Week",
+     col = "navy") 
+lines(lowess(time(workhours.ts), workhours.ts), col = "red") 
+```
+
+```{r auto correlation analysis}
+# Auto-correlation Analysis
+acf(workhours.ts, main = "Auto-correlation Analysis") 
+```
+
+```{r load the data for Souvenir Sales}
+# Load the data for Souvenir Sales
+data4 <- read.csv("SouvenirSales.csv")
+```
+
+```{r create a time series object for Souvenir Sales}
+# Create a time series object for Souvenir Sales
+souvenir.ts <- ts(data4$Sales, 
+                   start = c(1995, 1), 
+                   # end = c(2001, 12),
+                   frequency = 12)
+```
+
+```{r create a time plot for Souvenir Sales}
+# Create a time plot for Souvenir Sales
+souvenir.ts |>
+  autoplot(col = "navy") +
+  labs(title = "Souvenir Sales",
+       x = "Year",
+       y = "Sales") +
+  # remove background
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.1),)
+```   
+```{r plot the time series}
+# Plot the time series
+plot(souvenir.ts, 
+     main = "Souvenir Sales (Original Scale)",
+     xlab = "Year", 
+     ylab = "Sales", 
+     col = "navy")
+lines(lowess(time(souvenir.ts), souvenir.ts), col = "red")
+```
+
+```{r log transformation y axis}
+# Log Transformation y axis
+plot(souvenir.ts, 
+     log = "y",  # Apply log transformation to the y-axis
+     main = "Souvenir Sales (Log-transformed Y)",
+     xlab = "Year", 
+     ylab = "Log(Sales)", 
+     col = "navy")
+```
+
+```{r log transformation x axis}
+# Log Transformation x axis
+plot(souvenir.ts, 
+     log = "x",  # Apply log transformation to the x-axis
+     main = "Souvenir Sales (Log-transformed X)",
+     xlab = "Log(Year)", 
+     ylab = "Sales", 
+     col = "navy")
+```
+
+```{r log transformation x and y axis}
+# Log Transformation x and y axis
+plot(souvenir.ts, 
+     log = "xy",  # Apply log transformation to both axes
+     main = "Souvenir Sales (Log-transformed X and Y)",
+     xlab = "Log(Year)", 
+     ylab = "Log(Sales)", 
+     col = "navy")
+```
+
+```{r partition the data into training and validation sets}
+# Partition the data into training and validation sets
+nValid <- 12
+nTrain <- length(souvenir.ts) - nValid
+train.ts <- window(souvenir.ts, start = c(1995, 1), end = c(1995, nTrain + 1))
+valid.ts <- window(souvenir.ts, start = c(1995, nTrain + 1), end = c(1995, nTrain + nValid))
+naive_forecast <- naive(train.ts, h = length(valid.ts))  # Naive forecast
+snaive_forecast <- snaive(train.ts, h = length(valid.ts))  # Seasonal naive forecast
+```
+
+```{r combine data and forecast for plotting}
+# Combine data and forecast for plotting
+naive_ts <- ts(naive_forecast$mean, start = time(valid.ts)[1], frequency = frequency(souvenir.ts))
+snaive_ts <- ts(snaive_forecast$mean, start = time(valid.ts)[1], frequency = frequency(souvenir.ts))
+```
+
+```{r plot the logaritmic series (training data)}
+# Plot the logaritmic series (training data)
+plot(train.ts,
+     ylab = "Sales",
+     xlab = "Time",
+     bty = "l",
+     xaxt = "n",
+     xlim = c(1995, 2002),
+     main = "Time plot log of monthly sales for a souvenir shop\n(training set)",
+     log = 'xy',
+     col = "blue",   # Add color to the training data
+     lwd = 1.5       # Increase line width of the training data
+)
+
+axis(1, at = seq(1995, 2002, 1), labels = format(seq(1995, 2002, 1)))
+
+lines(snaive.pred$mean, 
+      lwd = 1.2, 
+      col = "red", 
+      lty = 1) 
+
+lines(valid.ts, 
+      col = "black", 
+      lwd = 1.2,   # Increase line width of the validation data
+      lty = 3)
+
+# Add the legend to the right of the plot, but within the plot area
+legend(x = "bottomright",  # Change position to "bottomright"
+       inset = c(-0, 0),   # Adjust position 
+       legend = c("Training Data", "Seasonal Naive Forecast", "Validation Data"),
+       col = c("blue", "red", "black"), 
+       lty = c(1, 1, 3),
+       lwd = 1.2) 
+```
+
+
+```{r load the Shampoo Sales data}
+# Load the Shampoo Sales data
+data5 <- read.csv("ShampooSales.csv")
+```
+
+
+```{r convert month to year}
+# Convert month to year
+data5$year <- as.numeric(format(as.Date(data5$Month, format = "%Y-%m-%d"), "%Y"))
+```
+
+```{r show dataframe}
+str(data5)
+```
+```{r show data}
+head(data5)
+```
+
+
+```{r create a time series object for Shampoo Sales}
+# Create a time series object for Shampoo Sales
+library(zoo)
+shampoo.ts <- ts(data5$Shampoo.Sales,  # Use the exact column name "Shampoo.Sales"
+                  start = c(1995, 1),  
+                  frequency = 12) 
+```
+
+```{r create a time plot for Shampoo Sales}
+# Create a time plot for Shampoo Sales
+shampoo.ts |>
+  autoplot(col = "navy") +
+  labs(title = "Shampoo Sales",
+       x = "Year",
+       y = "Sales") +
+  # remove background
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line(colour = "black", size = 0.1),)
+```   
+```{r decompose the time series for Shampoo Sales}
+# Decompose the time series for Shampoo Sales
+decomp5 <- decompose(shampoo.ts)
+```
+
+```{r create an autoplot of the decomposed time series for Shampoo Sales}
+# Create an autoplot of the decomposed time series for Shampoo Sales
+decompose(shampoo.ts) |> 
+  autoplot() +
+  geom_smooth(method = "loess", se = FALSE, color = "blue") 
+```
+```{r check the seasonality}
+# Check the seasonality
+# isSeasonal(sales.ts)
+ggseasonplot(shampoo.ts, year.labels = TRUE) 
+```
+```{r partition the data into training and validation sets}
+# Partition the data into training and validation sets
+train_size <- floor(0.8 * length(sales.ts))  # Adjust split ratio as needed
+train_data <- window(sales.ts, end = time(sales.ts)[train_size])
+validation_data <- window(sales.ts, start = time(sales.ts)[train_size + 1])
+```
+
+```{r choose a forecasting model}
+# Choose a forecasting model
+library(forecast)
+model <- snaive(train_data) 
+```
+
+```{r forecast on the validation set}
+# Forecast on the validation set
+forecasts <- forecast(model, h = length(validation_data))
+```
+
+```{r evaluate forecast accuracy on the validation set}
+# Evaluate forecast accuracy on the validation set
+accuracy(forecasts, validation_data)
+```
+
