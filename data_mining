@@ -1,0 +1,611 @@
+Section_1
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{R install packages}
+install.packages("lubridate")
+install.packages("caret")
+install.packages("readr")
+install.packages("rpart")
+install.packages("randomForest")
+install.packages("rpart.plot")
+```
+
+```{R load libraries}
+library(lubridate)
+library(caret)
+library(readr)
+library(rpart)
+library(randomForest)
+library(rpart.plot)
+```
+
+```{R load data}
+glassdoor_reviews <- read_csv("glassdoor_reviews.csv")
+View(glassdoor_reviews)
+```
+```{R data cleaning}
+#Check for missing values
+summary(glassdoor_reviews)
+sapply(glassdoor_reviews, function(x) sum(is.na(x)))
+```
+
+
+```{R data cleaning}
+#Fill missing categorical values with "Unknown"
+glassdoor_reviews$job_title[glassdoor_reviews$job_title == " "] <- "Unknown"
+glassdoor_reviews$location[glassdoor_reviews$location == ""] <- "Unknown"
+```
+
+
+```{R data cleaning}
+# Convert date_review to Date format assuming it's in Excel format (days since 1900)
+glassdoor_reviews$date_review <- as.Date(glassdoor_reviews$date_review, origin = "1899-12-30")
+```
+
+
+
+
+
+```{R data cleaning}
+#Remove diversity_inclusion column
+glassdoor_reviews <- glassdoor_reviews[, !(names(glassdoor_reviews) %in% c("diversity_inclusion"))]
+```
+
+
+
+```{R data cleaning}
+#Remove rows for numeric variables which have NA values
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$work_life_balance),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$culture_values),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$overall_rating),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$comp_benefits),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$career_opp),]
+glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews$senior_mgmt),]
+```
+
+
+```{R data cleaning}
+#List of numeric columns to check for NA values
+numeric_columns <- c("work_life_balance", "culture_values", "overall_rating")
+```
+
+```{R data cleaning}
+#Remove rows for numeric variables which have NA values
+for (column in numeric_columns) {
+  glassdoor_reviews <- glassdoor_reviews[!is.na(glassdoor_reviews[[column]]),]
+}
+```
+
+```{R data cleaning}
+#Check the structure of the cleaned data
+str(glassdoor_reviews)
+```
+
+
+```{R data cleaning}
+#Summary of the cleaned data
+summary(glassdoor_reviews)
+```
+```{R data cleaning}
+sapply(glassdoor_reviews, function(x) sum(is.na(x)))
+```
+```{r install packages}
+install.packages("dplyr")
+```
+```{r load libraries}
+library(dplyr)
+```
+```{r convert overall rating}
+# Convert overall_rating to numeric
+glassdoor_reviews$overall_rating <- as.character(glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Very Satisfied", "5", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Satisfied", "4", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("OK", "3", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Dissatisfied", "2", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- gsub("Very Dissatisfied", "1", glassdoor_reviews$overall_rating)
+glassdoor_reviews$overall_rating <- as.numeric(glassdoor_reviews$overall_rating)
+```
+
+
+```{r summary statistics}
+# Summary statistics for overall_rating
+summary(glassdoor_reviews$overall_rating)
+```
+
+```{r install packages}
+install.packages("ggplot2")
+```
+```{r load libraries}
+library(ggplot2)
+```
+
+```{r visualizations}
+ggplot(glassdoor_reviews, aes(x = overall_rating)) +
+  geom_histogram(fill = "blue", color = "black", bins = 5) +
+  labs(title = "Histogram of Overall Rating", x = "Overall Rating", y = "Frequency")
+```
+```{r linear regression}
+# Linear regression model
+lm_model <- lm(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = glassdoor_reviews)
+summary(lm_model)
+```
+```{r check for multicollinearity}
+# Check for multicollinearity
+cor(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")])
+```
+```{r install packages}
+install.packages("glmnet")
+```
+```{r load libraries}
+library(glmnet)
+```
+
+
+
+```{r lasso regression}
+# Lasso regression model
+lasso_model <- cv.glmnet(as.matrix(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")]), glassdoor_reviews$overall_rating, alpha = 1)
+plot(lasso_model)
+```
+```{r correlation matrix}
+# Correlation matrix
+cor(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")])
+```
+```{r maxi max}
+## Create a decision matrix with 'Comp_Benefits', 'Work_Life_Balance', 'Career_opp', 'Senior_mngmt' and 'Culture_values' as criteria
+decision_matrix <- data.frame(
+  Comp_Benefits = c(9, 7, 8, 6, 5),
+  Work_Life_Balance = c(8, 9, 7, 6, 5),
+  Career_opp = c(7, 8, 9, 6, 5),
+  Senior_mngmt = c(6, 7, 8, 9, 5),
+  Culture_values = c(5, 6, 7, 8, 9)
+)
+```
+
+
+```{r maximum value}
+# Identify the maximum value in each column
+max_values <- apply(decision_matrix, 2, max)
+max_values
+```
+```{r highest value}
+## Choose the option with the highest maximum value
+best_option <- which.max(max_values)
+best_option
+```
+
+```{r install packages}
+install.packages("rpart")
+install.packages("rpart.plot")
+```
+```{r load libraries}
+library(rpart)
+library(rpart.plot)
+```
+
+```{r decision tree}
+# Decision tree model
+decision_tree <- rpart(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = glassdoor_reviews, method = "anova")
+rpart.plot(decision_tree)
+```
+```{r install packages}
+install.packages("randomForest")
+```
+```{r load libraries}
+library(randomForest)
+```
+```{r normalize data}
+# Normalize the data
+glassdoor_reviews_normalized <- as.data.frame(scale(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")]))
+glassdoor_reviews_normalized$overall_rating <- glassdoor_reviews$overall_rating
+```
+
+```{r transform data}
+# Transform the data
+glassdoor_reviews_transformed <- as.data.frame(scale(log(glassdoor_reviews[, c("work_life_balance", "comp_benefits", "career_opp", "senior_mgmt", "culture_values")]+1)))
+glassdoor_reviews_transformed$overall_rating <- glassdoor_reviews$overall_rating
+```
+
+
+```{r subsample data}
+# Random Subsampling
+set.seed(123)
+sample_index <- sample(nrow(glassdoor_reviews), 10000) # Adjust the sample size as needed
+rf_model <- randomForest(overall_rating ~ work_life_balance + comp_benefits + career_opp + senior_mgmt + culture_values, data = glassdoor_reviews[sample_index, ])
+rf_model
+```
+
+```{r predict}
+# Predict using the random forest model
+predictions <- predict(rf_model, glassdoor_reviews[sample_index, ])
+```
+
+```{r evaluate the model}
+# Evaluate the model
+confusion_matrix <- table(predictions, glassdoor_reviews[sample_index, ]$overall_rating)
+confusion_matrix
+```
+Section_2
+library(ggplot2)
+library(ggpubr)
+
+# Read the file
+gd <- read.csv("C:/Users/LL/Desktop/glassdoor_reviews.csv", fileEncoding = "UTF-8")
+
+# Check for missing values
+summary(gd)
+##      firm           date_review         job_title           current         
+##  Length:838566      Length:838566      Length:838566      Length:838566     
+##  Class :character   Class :character   Class :character   Class :character  
+##  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+##                                                                             
+##                                                                             
+##                                                                             
+##                                                                             
+##    location         overall_rating  work_life_balance culture_values  
+##  Length:838566      Min.   :1.000   Min.   :1.00      Min.   :1.00    
+##  Class :character   1st Qu.:3.000   1st Qu.:2.00      1st Qu.:3.00    
+##  Mode  :character   Median :4.000   Median :4.00      Median :4.00    
+##                     Mean   :3.656   Mean   :3.38      Mean   :3.59    
+##                     3rd Qu.:5.000   3rd Qu.:4.00      3rd Qu.:5.00    
+##                     Max.   :5.000   Max.   :5.00      Max.   :5.00    
+##                                     NA's   :149894    NA's   :191373  
+##  diversity_inclusion   career_opp     comp_benefits     senior_mgmt    
+##  Min.   :1           Min.   :1.00     Min.   :1.0      Min.   :1.00    
+##  1st Qu.:3           1st Qu.:3.00     1st Qu.:3.0      1st Qu.:2.00    
+##  Median :4           Median :4.00     Median :3.0      Median :3.00    
+##  Mean   :4           Mean   :3.46     Mean   :3.4      Mean   :3.18    
+##  3rd Qu.:5           3rd Qu.:5.00     3rd Qu.:4.0      3rd Qu.:4.00    
+##  Max.   :5           Max.   :5.00     Max.   :5.0      Max.   :5.00    
+##  NA's   :702500      NA's   :147501   NA's   :150082   NA's   :155876  
+##   recommend          ceo_approv          outlook            headline        
+##  Length:838566      Length:838566      Length:838566      Length:838566     
+##  Class :character   Class :character   Class :character   Class :character  
+##  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+##                                                                             
+##                                                                             
+##                                                                             
+##                                                                             
+##      pros               cons          
+##  Length:838566      Length:838566     
+##  Class :character   Class :character  
+##  Mode  :character   Mode  :character  
+##                                       
+##                                       
+##                                       
+## 
+sapply(gd, function(x) sum(is.na(x)))
+##                firm         date_review           job_title             current 
+##                   0                   0                   0                   0 
+##            location      overall_rating   work_life_balance      culture_values 
+##                   0                   0              149894              191373 
+## diversity_inclusion          career_opp       comp_benefits         senior_mgmt 
+##              702500              147501              150082              155876 
+##           recommend          ceo_approv             outlook            headline 
+##                   0                   0                   0                   0 
+##                pros                cons 
+##                   0                   0
+# Fill missing categorical values with "Unknown"
+gd$job_title[gd$job_title == " "] <- "Unknown"
+gd$location[gd$location == ""] <- "Unknown"
+
+# Convert date_review to Date format assuming it’s in Excel format (days since 1900)
+gd$date_review <- as.Date(gd$date_review, origin = "1899-12-30")
+
+# Removing the diversity inclusion because it has with too many NAs (702,500)
+gd <- gd[, !(names(gd) %in% c("diversity_inclusion"))]
+
+# Removing rows for numerical variables which have NA's in it 
+# (work_life_balance, 149,894), (culture_values, 191373), (career_opp, 147501), 
+# (comp_benefits, 150082), (senior_mgmt, 155876)
+# List of numeric columns to check for NA values
+numeric_columns <- c("overall_rating", "work_life_balance", "culture_values", 
+                     "career_opp", "comp_benefits", "senior_mgmt")
+
+# Remove rows with NA in any of these numeric columns
+gd <- gd[complete.cases(gd[, numeric_columns]), ]
+
+# Check the structure of the cleaned gd
+str(gd)
+## 'data.frame':    637409 obs. of  17 variables:
+##  $ firm             : chr  "AFH-Wealth-Management" "AFH-Wealth-Management" "AFH-Wealth-Management" "AFH-Wealth-Management" ...
+##  $ date_review      : Date, format: "2015-04-05" "2015-12-11" ...
+##  $ job_title        : chr  "Unknown" " Office Administrator" " Office Administrator" "Unknown" ...
+##  $ current          : chr  "Current Employee" "Current Employee, more than 1 year" "Current Employee, less than 1 year" "Current Employee" ...
+##  $ location         : chr  "Unknown" "Bromsgrove, England, England" "Bromsgrove, England, England" "Unknown" ...
+##  $ overall_rating   : int  2 2 1 5 1 3 1 5 4 1 ...
+##  $ work_life_balance: num  4 3 1 2 2 4 1 5 4 1 ...
+##  $ culture_values   : num  3 1 1 3 1 2 1 5 4 1 ...
+##  $ career_opp       : num  2 2 1 2 2 2 1 5 4 1 ...
+##  $ comp_benefits    : num  3 1 1 2 1 3 1 4 4 3 ...
+##  $ senior_mgmt      : num  3 4 1 3 1 2 1 5 4 1 ...
+##  $ recommend        : chr  "x" "x" "x" "x" ...
+##  $ ceo_approv       : chr  "o" "o" "o" "o" ...
+##  $ outlook          : chr  "r" "r" "x" "r" ...
+##  $ headline         : chr  "Young colleagues, poor micro management" "Excellent staff, poor salary" "Low salary, bad micromanagement" "Over promised under delivered" ...
+##  $ pros             : chr  "Very friendly and welcoming to new staff. Easy going ethic." "Friendly, helpful and hard-working colleagues" "Easy to get the job even without experience in finance" "Nice staff to work with" ...
+##  $ cons             : chr  "Poor salaries, poor training and communication." "Poor salary which doesn't improve much with progression, no incentive to work harder, high turnover of staff, poor systems" "Very low salary, poor working conditions, very little training provided but high expectations. Micro management"| __truncated__ "No career progression and salary is poor" ...
+summary(gd)
+##      firm            date_review          job_title           current         
+##  Length:637409      Min.   :2012-05-23   Length:637409      Length:637409     
+##  Class :character   1st Qu.:2016-05-27   Class :character   Class :character  
+##  Mode  :character   Median :2018-07-17   Mode  :character   Mode  :character  
+##                     Mean   :2018-04-01                                        
+##                     3rd Qu.:2020-08-05                                        
+##                     Max.   :2021-06-07                                        
+##    location         overall_rating work_life_balance culture_values 
+##  Length:637409      Min.   :1.00   Min.   :1.000     Min.   :1.000  
+##  Class :character   1st Qu.:3.00   1st Qu.:2.000     1st Qu.:3.000  
+##  Mode  :character   Median :4.00   Median :4.000     Median :4.000  
+##                     Mean   :3.64   Mean   :3.378     Mean   :3.591  
+##                     3rd Qu.:5.00   3rd Qu.:5.000     3rd Qu.:5.000  
+##                     Max.   :5.00   Max.   :5.000     Max.   :5.000  
+##    career_opp    comp_benefits    senior_mgmt     recommend        
+##  Min.   :1.000   Min.   :1.000   Min.   :1.000   Length:637409     
+##  1st Qu.:3.000   1st Qu.:3.000   1st Qu.:2.000   Class :character  
+##  Median :4.000   Median :4.000   Median :3.000   Mode  :character  
+##  Mean   :3.484   Mean   :3.414   Mean   :3.188                     
+##  3rd Qu.:5.000   3rd Qu.:4.000   3rd Qu.:4.000                     
+##  Max.   :5.000   Max.   :5.000   Max.   :5.000                     
+##   ceo_approv          outlook            headline             pros          
+##  Length:637409      Length:637409      Length:637409      Length:637409     
+##  Class :character   Class :character   Class :character   Class :character  
+##  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+##                                                                             
+##                                                                             
+##                                                                             
+##      cons          
+##  Length:637409     
+##  Class :character  
+##  Mode  :character  
+##                    
+##                    
+## 
+sapply(gd, function(x) sum(is.na(x)))
+##              firm       date_review         job_title           current 
+##                 0                 0                 0                 0 
+##          location    overall_rating work_life_balance    culture_values 
+##                 0                 0                 0                 0 
+##        career_opp     comp_benefits       senior_mgmt         recommend 
+##                 0                 0                 0                 0 
+##        ceo_approv           outlook          headline              pros 
+##                 0                 0                 0                 0 
+##              cons 
+##                 0
+# Create a new column 'tenure_group' for categorizing employee tenure
+gd$tenure_group <- NA
+
+# Assign values to 'tenure_group' column based on employee tenure
+gd$tenure_group[grepl("Current Employee, less than 1 year", gd$current)] <- "Less than 1 year"
+gd$tenure_group[grepl("Current Employee, more than 3 years", gd$current)] <- "More than 3 years"
+gd$tenure_group[grepl("Current Employee, more than 5 years", gd$current)] <- "More than 5 years"
+gd$tenure_group[grepl("Current Employee, more than 8 years", gd$current)] <- "More than 8 years"
+gd$tenure_group[grepl("Current Employee, more than 10 years", gd$current)] <- "More than 10 years"
+
+# Filter out rows with NA values in 'tenure_group'
+gd <- gd[!is.na(gd$tenure_group), ]
+
+# Save the filtered gd to a CSV file
+write.csv(gd, "gd.csv")
+
+# Create a binary group for t-test (1 year or less vs. more than 5 years)
+gd$t_test_group <- ifelse(gd$tenure_group == "Less than 1 year", "Less than 1 year", 
+                            ifelse(gd$tenure_group %in% c("More than 5 years", "More than 8 years", "More than 10 years"), 
+                                   "More than 5 years", NA))
+
+# Remove NA values for t-test
+t_test_gd <- na.omit(gd[gd$t_test_group %in% c("Less than 1 year", "More than 5 years"), c("t_test_group", "overall_rating")])
+
+# Create boxplot to compare overall rating by tenure group
+p <- ggplot(t_test_gd, aes(x = t_test_group, y = overall_rating, fill = t_test_group)) +
+  geom_boxplot() +
+  labs(title = "Comparison of Overall Rating by Tenure Group",
+       x = "Tenure Group",
+       y = "Overall Rating") +
+  theme(legend.position = "none") +
+  stat_compare_means(aes(label = ..p.signif..), 
+                     method = "t.test", 
+                     label.x = 1.5,
+                     label.y = max(t_test_gd$overall_rating) + 0.5)  # Display p-value at the top of the boxplot
+
+# Print the boxplot
+print(p)
+
+
+# Perform t-test
+t_test_result <- t.test(overall_rating ~ t_test_group, data = t_test_gd)
+print(t_test_result)
+## 
+##  Welch Two Sample t-test
+## 
+## data:  overall_rating by t_test_group
+## t = 22.083, df = 89307, p-value < 2.2e-16
+## alternative hypothesis: true difference in means between group Less than 1 year and group More than 5 years is not equal to 0
+## 95 percent confidence interval:
+##  0.1386472 0.1656557
+## sample estimates:
+##  mean in group Less than 1 year mean in group More than 5 years 
+##                        3.938727                        3.786576
+Based on the results of the t-test, we found a significant difference in overall ratings (overall_rating) between employees with less than 1 year of tenure and those with more than 5 years (p < 2.2e-16). Employees with less than 1 year of tenure had an average overall rating of 3.939, while those with more than 5 years had an average overall rating of 3.787. This indicates that employees with shorter tenures tend to have higher overall ratings.
+
+Conclusion: The satisfaction ratings of employees with less than 1 year of tenure are significantly higher than those of employees with more than 5 years of tenure. This suggests that there may be a downward trend in overall employee satisfaction as tenure increases.
+
+suggestion： Based on this analysis, it is recommended that the company focus on the satisfaction of long-tenured employees, investigate potential reasons for their lower satisfaction (such as work environment and career development opportunities), and implement appropriate improvement measures. Additionally, conducting a more in-depth survey to gather employee feedback may help address underlying issues.
+
+# Perform ANOVA by grouping tenure into (Less than 1 year, More than 3,5,8,10 years)
+anova_gd <- na.omit(gd[gd$tenure_group %in% c("Less than 1 year","More than 3 years", "More than 5 years", "More than 8 years", "More than 10 years"), 
+                           c("tenure_group", "overall_rating")])
+anova_result <- aov(overall_rating ~ tenure_group, data = anova_gd)
+
+# Display the summary of the ANOVA results
+summary(anova_result)
+##                  Df Sum Sq Mean Sq F value Pr(>F)    
+## tenure_group      4    954  238.59   185.7 <2e-16 ***
+## Residuals    183948 236297    1.28                   
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+Through analysis of variance (ANOVA), we further examined the differences in overall ratings among five tenure groups: less than 1 year, 3 years, 5 years, 8 years, and more than 10 years. The results indicated a significant difference in ratings among the different tenure groups (F(4, 183948) = 185.7, p < 2e-16). This suggests that employees’ tenure may significantly impact their satisfaction ratings.
+
+TukeyHSD(anova_result)
+##   Tukey multiple comparisons of means
+##     95% family-wise confidence level
+## 
+## Fit: aov(formula = overall_rating ~ tenure_group, data = anova_gd)
+## 
+## $tenure_group
+##                                             diff          lwr          upr
+## More than 10 years-Less than 1 year  -0.16666665 -0.191667305 -0.141665988
+## More than 3 years-Less than 1 year   -0.18091556 -0.200179451 -0.161651660
+## More than 5 years-Less than 1 year   -0.15308903 -0.174799672 -0.131378385
+## More than 8 years-Less than 1 year   -0.13037723 -0.158161605 -0.102592864
+## More than 3 years-More than 10 years -0.01424891 -0.037992250  0.009494432
+## More than 5 years-More than 10 years  0.01357762 -0.012190592  0.039345827
+## More than 8 years-More than 10 years  0.03628941  0.005231083  0.067347741
+## More than 5 years-More than 3 years   0.02782653  0.007576457  0.048076597
+## More than 8 years-More than 3 years   0.05053832  0.023879654  0.077196988
+## More than 8 years-More than 5 years   0.02271179 -0.005765195  0.051188783
+##                                          p adj
+## More than 10 years-Less than 1 year  0.0000000
+## More than 3 years-Less than 1 year   0.0000000
+## More than 5 years-Less than 1 year   0.0000000
+## More than 8 years-Less than 1 year   0.0000000
+## More than 3 years-More than 10 years 0.4735765
+## More than 5 years-More than 10 years 0.6034328
+## More than 8 years-More than 10 years 0.0125093
+## More than 5 years-More than 3 years  0.0016687
+## More than 8 years-More than 3 years  0.0000023
+## More than 8 years-More than 5 years  0.1889530
+plot(TukeyHSD(anova_result))
+
+Section_3
+# Load necessary libraries
+#install.packages("rpart")
+#install.packages("rpart.plot")
+library(rpart.plot)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(rpart)
+library(ranger)
+library(pROC)
+
+# Read the file
+gd<-read.csv("glassdoor_reviews.csv")
+head(gd)
+
+# DATA PREPARATION AND CLEANING FOR ANALYSIS
+# Check for missing values
+summary(gd)
+sapply(gd, function(x) sum(is.na(x)))
+
+# Fill missing categorical values with "Unknown"
+gd$job_title[gd$job_title == " "] <- "Unknown"
+gd$location[gd$location == ""] <- "Unknown"
+
+# Convert date_review to Date format assuming it’s in Excel format (days since 1900)
+gd$date_review <- as.Date(gd$date_review, origin = "1899-12-30")
+
+# Removing the diversity inclusion because it has with too many NAs (702,500)
+gd <- gd[, !(names(gd) %in% c("diversity_inclusion"))]
+
+# Removing rows for numerical variables which have NA's in it 
+# (work_life_balance, 149,894), (culture_values, 191373), (career_opp, 147501), 
+# (comp_benefits, 150082), (senior_mgmt, 155876)
+# List of numeric columns to check for NA values
+numeric_columns <- c("overall_rating", "work_life_balance", "culture_values", 
+                     "career_opp", "comp_benefits", "senior_mgmt")
+
+# Remove rows with NA in any of these numeric columns
+gd <- gd[complete.cases(gd[, numeric_columns]), ]
+
+# Check the structure of the cleaned data
+str(gd)
+summary(gd)
+sapply(gd, function(x) sum(is.na(x)))
+
+# Convert recommendation, CEO approval, and outlook to factors
+gd <- gd %>%
+  mutate(
+    recommend = factor(recommend, levels = c("v", "r", "x", "o")),
+    ceo_approv = factor(ceo_approv, levels = c("v", "r", "x", "o")),
+    outlook = factor(outlook, levels = c("v", "r", "x", "o"))
+  )
+
+# Convert Recommendation to Binary Variable
+# Convert 'recommend' to binary (1 for "'"v - Positive", 0 for 
+# other levels "(r - Mild, x - Negative, o - No opinion)")
+gd <- gd %>%
+  mutate(recommend_binary = ifelse(recommend == "v", 1, 0))
+table(gd$recommend_binary)
+
+# SSECTION 3: IMPACT OF VARIABLES ON RECOMMENDATIONS
+
+# Exploratory Data Analysis 
+# Visualize relationships between recommend_binary and variables like culture_values, senior_mgmt, and career_opp.
+
+# Distribution of culture_values by recommend_binary
+ggplot(gd, aes(x = culture_values, fill = factor(recommend_binary))) +
+  geom_bar(position = "dodge") +labs(x = "Culture Values", y = "Frequency", fill = "Positive Recommendation") +
+  theme(
+    axis.title.x = element_text(face = "bold"),
+    axis.title.y = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")
+  )
+# Distribution of senior_mgmt by recommend_binary
+ggplot(gd, aes(x = senior_mgmt, fill = factor(recommend_binary))) +
+  geom_bar(position = "dodge") +labs(x = "Senior Management", y = "Frequency",fill = "Positive Recommendation") +
+  theme(
+    axis.title.x = element_text(face = "bold"),
+    axis.title.y = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")
+  )
+# Distribution of career_opp by recommend_binary
+ggplot(gd, aes(x = career_opp, fill = factor(recommend_binary))) +
+  geom_bar(position = "dodge") +
+  labs(x = "Career Opportunity",y = "Frequency", fill = "Positive Recommendation") +
+  theme(
+    axis.title.x = element_text(face = "bold"),
+    axis.title.y = element_text(face = "bold"),
+    legend.title = element_text(face = "bold")
+  )
+
+# Logistic Regression Model
+# Logistic regression model to predict recommendation
+model_logistic <- glm(recommend_binary ~ culture_values + senior_mgmt + career_opp, 
+                      data = gd, family = "binomial")
+
+# Summary of the logistic model
+summary(model_logistic)
+
+# Decision tree model
+model_tree <- rpart(recommend_binary ~ culture_values + senior_mgmt + career_opp, 
+                    data = gd, method = "class")
+
+# Plot the decision tree
+rpart.plot(model_tree)
+
+# Split data into training and testing sets
+set.seed(123)
+train_index_rec <- sample(1:nrow(gd), 0.7 * nrow(gd))
+train_data_rec <- gd[train_index_rec, ]
+test_data_rec <- gd[-train_index_rec, ]
+
+# Evaluate Model Performance
+# To evaluate the logistic regression model, we can calculate metrics like accuracy 
+# or AUC (Area Under Curve) for classification performance.
+
+# Predict on the same dataset (just for illustration)
+gd$pred_logistic <- predict(model_logistic, type = "response")
+gd$predicted_class <- ifelse(gd$pred_logistic > 0.5, 1, 0)
+
+# Confusion matrix for logistic regression
+table(Predicted = gd$predicted_class, Actual = gd$recommend_binary)
+
+# Calculate AUC
+roc_curve <- roc(gd$recommend_binary, gd$pred_logistic)
+auc(roc_curve)
+
+
+
